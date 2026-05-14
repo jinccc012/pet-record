@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "Running pre-commit checks..."
+
+# 1. Backend checks
+if [ -d "backend" ]; then
+  echo "Checking backend..."
+  cd backend
+
+  if [ -f "./mvnw" ]; then
+    ./mvnw -q -DskipTests compile
+  else
+    mvn -q -DskipTests compile
+  fi
+
+  cd ..
+fi
+
+# 2. Frontend checks
+if [ -d "frontend" ]; then
+  echo "Checking frontend..."
+  cd frontend
+
+  npm run lint
+
+  cd ..
+fi
+
+# 3. Optional Claude staged diff review
+if command -v claude >/dev/null 2>&1; then
+  echo "Running Claude staged diff review..."
+
+  STAGED_DIFF="$(git diff --cached -- . \
+    ':!package-lock.json' \
+    ':!pnpm-lock.yaml' \
+    ':!yarn.lock' \
+    ':!*.min.js')"
+
+  if [ -n "$STAGED_DIFF" ]; then
+    REVIEW_OUTPUT="$(
+      printf "%s\n" "$STAGED_DIFF" | claude -p "
+你是這個專案的 pre-commit reviewer。
+
+請只檢查 staged diff，不要修改檔案。
+
+重點檢查：
+1. 明顯 bug
+2. 安全風險
+3. API 權限或資料外洩問題
+4. 時區處理是否錯誤
+5. 後端 validation 是否缺失
+6. 前端是否有明顯錯誤處理缺漏
+
+請用以下格式輸出：
+
+PASS
+或
+FAIL
+- 問題 1
+- 問題 2
+
+只有 blocking issue 才回 FAIL。
+一般建議不要阻止 commit。
+"
+    )"
+
+    echo "$REVIEW_OUTPUT"
+
+    if echo "$REVIEW_OUTPUT" | grep -q "^FAIL"; then
+      echo "Claude found blocking issues. Commit aborted."
+      exit 1
+    fi
+  fi
+else
+  echo "Claude CLI not found. Skipping Claude review."
+fi
+
+echo "Pre-commit checks passed."
