@@ -43,6 +43,9 @@ pnpm-debug.log*
 .env.*
 !.env.example
 
+# Spring Boot local profile (contains DB password / JWT secret)
+application-local.yaml
+
 # =========================
 # Uploaded / temp files
 # =========================

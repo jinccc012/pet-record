@@ -1,0 +1,73 @@
+### Variables
+@host = http://localhost:8080
+@email = harumi@example.com
+@password = password123
+
+### Register
+# @name register
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "harumi",
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+client.global.set("accessToken", response.body.accessToken);
+%}
+
+### Login
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+client.global.set("accessToken", response.body.accessToken);
+%}
+
+### Get current user
+GET {{host}}/api/users/me
+Authorization: Bearer {{accessToken}}
+
+### Login with wrong password (expect 401)
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "wrong-password"
+}
+
+### /me without token (expect 401)
+GET {{host}}/api/users/me
+
+### /me with invalid token (expect 401)
+GET {{host}}/api/users/me
+Authorization: Bearer not-a-real-token
+
+### Register with short password (expect 400)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "shorty",
+  "email": "short@example.com",
+  "password": "123"
+}
+
+### Register duplicate email (expect 409)
+POST {{host}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "harumi2",
+  "email": "{{email}}",
+  "password": "{{password}}"
+}

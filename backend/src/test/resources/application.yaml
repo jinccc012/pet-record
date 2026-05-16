@@ -1,0 +1,6 @@
+app:
+  jwt:
+    secret: test-secret-test-secret-test-secret-test-secret
+    expiration-minutes: 60
+  cors:
+    allowed-origins: http://localhost:5173
