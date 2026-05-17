@@ -1,0 +1,106 @@
+### Variables
+@host = http://localhost:8080
+@email = harumi@example.com
+@password = password123
+
+### Login to get token
+# @name login
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+> {%
+client.global.set("accessToken", response.body.accessToken);
+%}
+
+### Create pet
+# @name createPet
+POST {{host}}/api/pets
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Mochi",
+  "species": "CAT",
+  "breed": "British Shorthair",
+  "gender": "FEMALE",
+  "birthDate": "2022-03-01",
+  "color": "grey",
+  "notes": "shy but friendly"
+}
+
+> {%
+client.global.set("petId", response.body.id);
+%}
+
+### List my pets
+GET {{host}}/api/pets
+Authorization: Bearer {{accessToken}}
+
+### Get pet by id
+GET {{host}}/api/pets/{{petId}}
+Authorization: Bearer {{accessToken}}
+
+### Patch pet (rename only)
+PATCH {{host}}/api/pets/{{petId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Mochi II"
+}
+
+### Patch pet (multiple fields)
+PATCH {{host}}/api/pets/{{petId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "color": "white",
+  "notes": "Updated notes"
+}
+
+### Delete pet (soft delete)
+DELETE {{host}}/api/pets/{{petId}}
+Authorization: Bearer {{accessToken}}
+
+### List without token (expect 401)
+GET {{host}}/api/pets
+
+### Get unknown pet (expect 404)
+GET {{host}}/api/pets/999999
+Authorization: Bearer {{accessToken}}
+
+### Create with missing name (expect 400)
+POST {{host}}/api/pets
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "species": "DOG"
+}
+
+### Create with invalid species enum (expect 400)
+POST {{host}}/api/pets
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Alien",
+  "species": "DRAGON"
+}
+
+### Create with future birthDate (expect 400)
+POST {{host}}/api/pets
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "name": "Future",
+  "species": "DOG",
+  "birthDate": "2099-01-01"
+}
