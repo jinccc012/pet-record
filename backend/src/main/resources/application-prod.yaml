@@ -1,0 +1,25 @@
+# Production profile (Cloud Run). Datasource / JWT / CORS all come from
+# environment variables; activated via SPRING_PROFILES_ACTIVE=prod.
+# Cloud Run injects PORT, which the app must bind to.
+server:
+  port: ${PORT:8080}
+
+spring:
+  datasource:
+    hikari:
+      # Neon free tier: keep the pool small and let it drain when idle so we
+      # don't hold connections that keep Neon from scaling to zero.
+      maximum-pool-size: 5
+      minimum-idle: 0
+      connection-timeout: 30000
+      idle-timeout: 60000
+      max-lifetime: 300000
+  jpa:
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    root: INFO
+    com.harumi.petrecord: INFO
