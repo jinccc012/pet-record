@@ -7,6 +7,12 @@ import type {
 } from '../types/dailyRecord';
 
 const recordsKey = (petId: number) => ['daily-records', petId] as const;
+const chartKey = (petId: number) => ['daily-chart', petId] as const;
+
+function invalidateRecordsAndChart(qc: ReturnType<typeof useQueryClient>, petId: number) {
+  qc.invalidateQueries({ queryKey: recordsKey(petId) });
+  qc.invalidateQueries({ queryKey: chartKey(petId) });
+}
 
 export function useDailyRecords(petId: number) {
   return useQuery<DailyRecord[]>({
@@ -20,7 +26,7 @@ export function useCreateDailyRecord(petId: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateDailyRecordRequest) => dailyRecordApi.create(petId, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: recordsKey(petId) }),
+    onSuccess: () => invalidateRecordsAndChart(qc, petId),
   });
 }
 
@@ -29,7 +35,7 @@ export function useUpdateDailyRecord(petId: number) {
   return useMutation({
     mutationFn: ({ id, payload }: { id: number; payload: UpdateDailyRecordRequest }) =>
       dailyRecordApi.update(petId, id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: recordsKey(petId) }),
+    onSuccess: () => invalidateRecordsAndChart(qc, petId),
   });
 }
 
@@ -37,6 +43,6 @@ export function useDeleteDailyRecord(petId: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => dailyRecordApi.remove(petId, id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: recordsKey(petId) }),
+    onSuccess: () => invalidateRecordsAndChart(qc, petId),
   });
 }

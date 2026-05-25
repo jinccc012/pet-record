@@ -1,4 +1,5 @@
 import { axiosInstance } from './axiosInstance';
+import type { ChartData } from '../types/chart';
 import type {
   CreateDailyRecordRequest,
   DailyRecord,
@@ -8,6 +9,13 @@ import type {
 export const dailyRecordApi = {
   async list(petId: number): Promise<DailyRecord[]> {
     const { data } = await axiosInstance.get<DailyRecord[]>(`/api/pets/${petId}/daily-records`);
+    return data;
+  },
+
+  async chart(petId: number, from: string, to: string): Promise<ChartData> {
+    const { data } = await axiosInstance.get<ChartData>(`/api/pets/${petId}/daily-records/chart`, {
+      params: { from, to },
+    });
     return data;
   },
 

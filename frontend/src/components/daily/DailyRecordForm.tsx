@@ -190,10 +190,16 @@ export function DailyRecordForm({ petId, existing, onDone }: DailyRecordFormProp
           <Typography variant="subtitle2">餵食紀錄</Typography>
         </Divider>
         {feedings.fields.map((field, i) => (
-          <Stack key={field.id} direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+          <Stack
+            key={field.id}
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{ alignItems: { xs: 'stretch', sm: 'flex-start' } }}
+          >
             <TextField
               label="時間"
               type="time"
+              sx={{ width: { xs: '100%', sm: 150 }, flexShrink: 0 }}
               slotProps={{ inputLabel: { shrink: true } }}
               {...register(`feedings.${i}.feedingTime`)}
               error={!!errors.feedings?.[i]?.feedingTime}
@@ -202,11 +208,20 @@ export function DailyRecordForm({ petId, existing, onDone }: DailyRecordFormProp
             <TextField
               label="份量 (g)"
               type="number"
+              sx={{ width: { xs: '100%', sm: 240 }, flexShrink: 0 }}
               slotProps={{ htmlInput: { step: '1', min: '0' } }}
               {...register(`feedings.${i}.foodGram`)}
             />
-            <TextField label="狀況" fullWidth {...register(`feedings.${i}.conditionText`)} />
-            <IconButton aria-label="刪除餵食" onClick={() => feedings.remove(i)} sx={{ mt: 1 }}>
+            <TextField
+              label="狀況"
+              sx={{ width: { xs: '100%', sm: 'auto' }, flexGrow: 1 }}
+              {...register(`feedings.${i}.conditionText`)}
+            />
+            <IconButton
+              aria-label="刪除餵食"
+              onClick={() => feedings.remove(i)}
+              sx={{ alignSelf: { xs: 'flex-end', sm: 'flex-start' }, mt: { sm: 1 } }}
+            >
               <DeleteOutlineIcon />
             </IconButton>
           </Stack>
@@ -223,30 +238,49 @@ export function DailyRecordForm({ petId, existing, onDone }: DailyRecordFormProp
           <Typography variant="subtitle2">排便紀錄</Typography>
         </Divider>
         {stools.fields.map((field, i) => (
-          <Stack key={field.id} direction="row" spacing={1} sx={{ alignItems: 'flex-start' }}>
+          <Stack
+            key={field.id}
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            sx={{ alignItems: { xs: 'stretch', sm: 'flex-start' } }}
+          >
             <TextField
               label="時間"
               type="time"
+              sx={{ width: { xs: '100%', sm: 150 }, flexShrink: 0 }}
               slotProps={{ inputLabel: { shrink: true } }}
               {...register(`stools.${i}.stoolTime`)}
               error={!!errors.stools?.[i]?.stoolTime}
               helperText={errors.stools?.[i]?.stoolTime?.message}
             />
-            <TextField label="狀況" fullWidth {...register(`stools.${i}.conditionText`)} />
-            <Controller
-              control={control}
-              name={`stools.${i}.abnormal`}
-              render={({ field: f }) => (
-                <FormControlLabel
-                  control={<Checkbox checked={f.value} onChange={(e) => f.onChange(e.target.checked)} />}
-                  label="異常"
-                  sx={{ whiteSpace: 'nowrap', mt: 0.5 }}
-                />
-              )}
+            <TextField
+              label="狀況"
+              sx={{ width: { xs: '100%', sm: 'auto' }, flexGrow: 1 }}
+              {...register(`stools.${i}.conditionText`)}
             />
-            <IconButton aria-label="刪除排便" onClick={() => stools.remove(i)} sx={{ mt: 1 }}>
-              <DeleteOutlineIcon />
-            </IconButton>
+            <Stack
+              direction="row"
+              sx={{ justifyContent: 'space-between', alignItems: 'center' }}
+            >
+              <Controller
+                control={control}
+                name={`stools.${i}.abnormal`}
+                render={({ field: f }) => (
+                  <FormControlLabel
+                    control={<Checkbox checked={f.value} onChange={(e) => f.onChange(e.target.checked)} />}
+                    label="異常"
+                    sx={{ whiteSpace: 'nowrap', mt: { sm: 0.5 } }}
+                  />
+                )}
+              />
+              <IconButton
+                aria-label="刪除排便"
+                onClick={() => stools.remove(i)}
+                sx={{ mt: { sm: 1 } }}
+              >
+                <DeleteOutlineIcon />
+              </IconButton>
+            </Stack>
           </Stack>
         ))}
         <Button
