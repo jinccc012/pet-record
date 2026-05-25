@@ -80,3 +80,4 @@ docker-compose.override.yml
 # =========================
 .claude/*
 CLAUDE.md
+docs/pet-record-plan.md
