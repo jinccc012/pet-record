@@ -1,5 +1,6 @@
 package com.harumi.petrecord.dailyrecord;
 
+import com.harumi.petrecord.dailyrecord.dto.ChartResponse;
 import com.harumi.petrecord.dailyrecord.dto.CreateDailyRecordRequest;
 import com.harumi.petrecord.dailyrecord.dto.DailyRecordResponse;
 import com.harumi.petrecord.dailyrecord.dto.UpdateDailyRecordRequest;
@@ -46,6 +47,14 @@ public class DailyRecordController {
                                                           @RequestParam(required = false)
                                                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(dailyRecordService.list(currentUser, petId, date));
+    }
+
+    @GetMapping("/chart")
+    public ResponseEntity<ChartResponse> chart(@AuthenticationPrincipal CurrentUser currentUser,
+                                               @PathVariable Long petId,
+                                               @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                                               @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(dailyRecordService.chart(currentUser, petId, from, to));
     }
 
     @GetMapping("/{recordId}")
