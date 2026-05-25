@@ -21,6 +21,7 @@ import { ErrorState } from '../common/ErrorState';
 import { Loading } from '../common/Loading';
 import { useDailyRecords, useDeleteDailyRecord } from '../../hooks/useDailyRecords';
 import type { DailyRecord } from '../../types/dailyRecord';
+import { DailyChartCard } from './DailyChartCard';
 import { DailyRecordForm } from './DailyRecordForm';
 
 interface DailyRecordsTabProps {
@@ -52,6 +53,8 @@ export function DailyRecordsTab({ petId }: DailyRecordsTabProps) {
 
   return (
     <Box>
+      <DailyChartCard petId={petId} />
+
       <Stack direction="row" sx={{ justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h6">日常生活紀錄</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={openCreate}>
@@ -103,7 +106,7 @@ export function DailyRecordsTab({ petId }: DailyRecordsTabProps) {
         </Stack>
       )}
 
-      <Dialog open={formOpen} onClose={closeForm} maxWidth="sm" fullWidth>
+      <Dialog open={formOpen} onClose={closeForm} maxWidth="md" fullWidth>
         <DialogTitle>{editing ? `編輯 ${editing.recordDate}` : '新增當日紀錄'}</DialogTitle>
         <DialogContent dividers>
           {formOpen && <DailyRecordForm petId={petId} existing={editing} onDone={closeForm} />}
