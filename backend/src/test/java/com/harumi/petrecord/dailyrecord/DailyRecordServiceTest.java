@@ -164,4 +164,35 @@ class DailyRecordServiceTest {
                 .thenReturn(Optional.empty());
         assertThat(service.list(OWNER, 10L, LocalDate.of(2000, 1, 1))).isEmpty();
     }
+
+    @Test
+    void chartMapsRowsToAlignedArrays() {
+        petOwnedBy(OWNER);
+        LocalDate from = LocalDate.of(2026, 5, 20);
+        LocalDate to = LocalDate.of(2026, 5, 21);
+        when(dailyRecordRepository.findChartRows(10L, from, to)).thenReturn(List.of(
+                new DailyChartRow(from, new BigDecimal("5.20"), 300, 120L),
+                new DailyChartRow(to, new BigDecimal("5.30"), 280, 130L)));
+
+        var res = service.chart(OWNER, 10L, from, to);
+
+        assertThat(res.labels()).containsExactly(from, to);
+        assertThat(res.weightKg()).containsExactly(new BigDecimal("5.20"), new BigDecimal("5.30"));
+        assertThat(res.waterMl()).containsExactly(300, 280);
+        assertThat(res.foodGram()).containsExactly(120L, 130L);
+    }
+
+    @Test
+    void chartRejectsFromAfterTo() {
+        petOwnedBy(OWNER);
+        assertThatThrownBy(() -> service.chart(OWNER, 10L, LocalDate.of(2026, 5, 21), LocalDate.of(2026, 5, 20)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void chartRejectsWhenPetNotOwned() {
+        when(petRepository.findByIdAndOwnerId(10L, STRANGER.id())).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> service.chart(STRANGER, 10L, DATE, DATE))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 }

@@ -2,6 +2,7 @@ package com.harumi.petrecord.dailyrecord;
 
 import com.harumi.petrecord.common.exception.DuplicateResourceException;
 import com.harumi.petrecord.common.exception.ResourceNotFoundException;
+import com.harumi.petrecord.dailyrecord.dto.ChartResponse;
 import com.harumi.petrecord.dailyrecord.dto.CreateDailyRecordRequest;
 import com.harumi.petrecord.dailyrecord.dto.DailyRecordResponse;
 import com.harumi.petrecord.dailyrecord.dto.FeedingRequest;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -91,6 +93,21 @@ public class DailyRecordService {
         DailyRecord record = loadOwned(petId, recordId);
         dailyRecordRepository.delete(record);
         log.info("Soft-deleted daily record id={} petId={}", recordId, petId);
+    }
+
+    @Transactional(readOnly = true)
+    public ChartResponse chart(CurrentUser currentUser, Long petId, LocalDate from, LocalDate to) {
+        assertPetOwned(currentUser, petId);
+        if (from == null || to == null) {
+            throw new IllegalArgumentException("from and to are required");
+        }
+        if (from.isAfter(to)) {
+            throw new IllegalArgumentException("from must not be after to");
+        }
+        if (ChronoUnit.DAYS.between(from, to) > 366) {
+            throw new IllegalArgumentException("range must not exceed 366 days");
+        }
+        return ChartResponse.from(dailyRecordRepository.findChartRows(petId, from, to));
     }
 
     private void assertPetOwned(CurrentUser currentUser, Long petId) {

@@ -167,4 +167,43 @@ class DailyRecordFlowIntegrationTest {
         // unauthenticated -> 401
         mvc.perform(get(base)).andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void chartAggregatesFoodAndAlignsByDate() throws Exception {
+        String token = registerToken("alice4");
+        long petId = createPet(token);
+        String base = "/api/pets/" + petId + "/daily-records";
+
+        mvc.perform(post(base).header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"recordDate":"2026-05-20","weightKg":5.20,"waterMl":300,
+                                 "feedings":[{"feedingTime":"08:00:00","foodGram":120},
+                                             {"feedingTime":"18:00:00","foodGram":80}]}
+                                """))
+                .andExpect(status().isCreated());
+        mvc.perform(post(base).header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"recordDate":"2026-05-21","weightKg":5.30,"waterMl":280,
+                                 "feedings":[{"feedingTime":"09:00:00","foodGram":130}]}
+                                """))
+                .andExpect(status().isCreated());
+
+        mvc.perform(get(base + "/chart?from=2026-05-20&to=2026-05-21")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.labels", org.hamcrest.Matchers.contains("2026-05-20", "2026-05-21")))
+                .andExpect(jsonPath("$.weightKg", org.hamcrest.Matchers.contains(5.20, 5.30)))
+                .andExpect(jsonPath("$.waterMl", org.hamcrest.Matchers.contains(300, 280)))
+                .andExpect(jsonPath("$.foodGram", org.hamcrest.Matchers.contains(200, 130)));
+
+        // bad range (from after to) -> 400
+        mvc.perform(get(base + "/chart?from=2026-05-21&to=2026-05-20")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+
+        // missing param -> 400
+        mvc.perform(get(base + "/chart?from=2026-05-20")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isBadRequest());
+    }
 }
