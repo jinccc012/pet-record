@@ -1,9 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Box, Button, MenuItem, Stack, TextField } from '@mui/material';
+import { Alert, Box, Button, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import dayjs from 'dayjs';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+import { PetAvatar } from '../file/PetAvatar';
+import { useAvatarUpload } from '../../hooks/useAvatarUpload';
 import { useUpdatePet } from '../../hooks/usePets';
 import {
   PET_GENDER_OPTIONS,
@@ -57,6 +59,13 @@ function toPayload(values: FormValues): UpdatePetRequest {
 export function PetBasicInfoForm({ pet }: { pet: Pet }) {
   const navigate = useNavigate();
   const updateMutation = useUpdatePet(pet.id);
+  const avatarUpload = useAvatarUpload(pet.id);
+
+  const onAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) avatarUpload.mutate(file);
+    e.target.value = ''; // allow re-selecting the same file
+  };
 
   const {
     control,
@@ -79,6 +88,26 @@ export function PetBasicInfoForm({ pet }: { pet: Pet }) {
   return (
     <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
       <Stack spacing={2}>
+        <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+          <PetAvatar pet={pet} size={96} />
+          <Box>
+            <Button variant="outlined" component="label" disabled={avatarUpload.isPending}>
+              {avatarUpload.isPending ? '上傳中…' : '更換頭像'}
+              <input
+                hidden
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={onAvatarChange}
+              />
+            </Button>
+            {avatarUpload.isError && (
+              <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                頭像上傳失敗,請再試一次
+              </Typography>
+            )}
+          </Box>
+        </Stack>
+
         {updateMutation.isSuccess && !isDirty && <Alert severity="success">已儲存</Alert>}
         {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
         <TextField

@@ -24,6 +24,7 @@ export interface Pet {
   birthDate: string | null;
   color: string | null;
   notes: string | null;
+  avatarFileId: number | null;
   createdAt: string;
   updatedAt: string;
 }

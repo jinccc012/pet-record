@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { EmptyState } from '../components/common/EmptyState';
 import { ErrorState } from '../components/common/ErrorState';
 import { Loading } from '../components/common/Loading';
+import { PetAvatar } from '../components/file/PetAvatar';
 import { usePets } from '../hooks/usePets';
 import { PET_SPECIES_OPTIONS, type PetSpecies } from '../types/pet';
 import { formatAge } from '../utils/ageUtils';
@@ -86,9 +87,7 @@ export function HomePage() {
                   <CardActionArea onClick={() => navigate(`/pets/${pet.id}`)}>
                     <CardContent>
                       <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                        <Typography sx={{ fontSize: 40, lineHeight: 1 }}>
-                          {SPECIES_EMOJI[pet.species]}
-                        </Typography>
+                        <PetAvatar pet={pet} size={48} />
                         <Box sx={{ flexGrow: 1 }}>
                           <Typography variant="h6">{pet.name}</Typography>
                           <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: 'wrap' }}>
