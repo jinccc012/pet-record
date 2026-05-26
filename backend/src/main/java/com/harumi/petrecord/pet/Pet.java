@@ -62,6 +62,9 @@ public class Pet {
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "avatar_file_id")
+    private Long avatarFileId;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

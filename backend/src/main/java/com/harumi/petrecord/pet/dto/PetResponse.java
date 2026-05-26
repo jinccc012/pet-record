@@ -16,6 +16,7 @@ public record PetResponse(
         LocalDate birthDate,
         String color,
         String notes,
+        Long avatarFileId,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -29,6 +30,7 @@ public record PetResponse(
                 pet.getBirthDate(),
                 pet.getColor(),
                 pet.getNotes(),
+                pet.getAvatarFileId(),
                 pet.getCreatedAt(),
                 pet.getUpdatedAt()
         );
