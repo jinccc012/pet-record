@@ -15,3 +15,13 @@ spring:
     enabled: true
     clean-disabled: false
     locations: classpath:db/migration
+
+# Dummy R2 config so the S3 beans build in tests; real R2 calls are mocked.
+r2:
+  account-id: test
+  access-key-id: test
+  secret-access-key: test
+  bucket-name: test-bucket
+  endpoint: https://test.r2.cloudflarestorage.com
+  upload-expire-minutes: 10
+  download-expire-minutes: 15
