@@ -86,9 +86,107 @@ class FileServiceTest {
     }
 
     @Test
-    void createRejectsNonAvatarCategory() {
+    void createSignedUploadUrlForHealthReportUsesPdfPrefix() {
+        petOwnedBy(OWNER);
+        when(uploadSessionRepository.save(any(UploadSession.class))).thenAnswer(inv -> {
+            UploadSession s = inv.getArgument(0);
+            s.setId(51L);
+            return s;
+        });
+        when(storage.presignUploadUrl(anyString(), anyString(), any(Duration.class)))
+                .thenReturn("https://r2/presigned-put");
+
         SignedUploadUrlRequest req = new SignedUploadUrlRequest(
-                10L, FileCategory.HEALTH_REPORT, "x.pdf", "application/pdf", 100L);
+                10L, FileCategory.HEALTH_REPORT, "blood.pdf", "application/pdf", 1024L);
+        fileService.createSignedUploadUrl(OWNER, req);
+
+        ArgumentCaptor<UploadSession> captor = ArgumentCaptor.forClass(UploadSession.class);
+        verify(uploadSessionRepository).save(captor.capture());
+        assertThat(captor.getValue().getObjectKey())
+                .startsWith("health-reports/users/1/pets/10/").endsWith(".pdf");
+        assertThat(captor.getValue().getFileCategory()).isEqualTo(FileCategory.HEALTH_REPORT);
+    }
+
+    @Test
+    void createSignedUploadUrlForUltrasoundVideo() {
+        petOwnedBy(OWNER);
+        when(uploadSessionRepository.save(any(UploadSession.class))).thenAnswer(inv -> {
+            UploadSession s = inv.getArgument(0);
+            s.setId(52L);
+            return s;
+        });
+        when(storage.presignUploadUrl(anyString(), anyString(), any(Duration.class)))
+                .thenReturn("https://r2/presigned-put");
+
+        SignedUploadUrlRequest req = new SignedUploadUrlRequest(
+                10L, FileCategory.ULTRASOUND_VIDEO, "scan.mp4", "video/mp4", 1024L);
+        fileService.createSignedUploadUrl(OWNER, req);
+
+        ArgumentCaptor<UploadSession> captor = ArgumentCaptor.forClass(UploadSession.class);
+        verify(uploadSessionRepository).save(captor.capture());
+        assertThat(captor.getValue().getObjectKey())
+                .startsWith("ultrasound-videos/users/1/pets/10/").endsWith(".mp4");
+    }
+
+    @Test
+    void createSignedUploadUrlForMkvVideo() {
+        petOwnedBy(OWNER);
+        when(uploadSessionRepository.save(any(UploadSession.class))).thenAnswer(inv -> {
+            UploadSession s = inv.getArgument(0);
+            s.setId(54L);
+            return s;
+        });
+        when(storage.presignUploadUrl(anyString(), anyString(), any(Duration.class)))
+                .thenReturn("https://r2/presigned-put");
+
+        SignedUploadUrlRequest req = new SignedUploadUrlRequest(
+                10L, FileCategory.ULTRASOUND_VIDEO, "scan.mkv", "video/x-matroska", 1024L);
+        fileService.createSignedUploadUrl(OWNER, req);
+
+        ArgumentCaptor<UploadSession> captor = ArgumentCaptor.forClass(UploadSession.class);
+        verify(uploadSessionRepository).save(captor.capture());
+        assertThat(captor.getValue().getObjectKey())
+                .startsWith("ultrasound-videos/users/1/pets/10/").endsWith(".mkv");
+        assertThat(captor.getValue().getContentType()).isEqualTo("video/x-matroska");
+    }
+
+    @Test
+    void createAllowsHealthAttachmentsUpTo100Mb() {
+        petOwnedBy(OWNER);
+        when(uploadSessionRepository.save(any(UploadSession.class))).thenAnswer(inv -> {
+            UploadSession s = inv.getArgument(0);
+            s.setId(53L);
+            return s;
+        });
+        when(storage.presignUploadUrl(anyString(), anyString(), any(Duration.class)))
+                .thenReturn("https://r2/presigned-put");
+
+        SignedUploadUrlRequest req = new SignedUploadUrlRequest(
+                10L, FileCategory.ULTRASOUND_VIDEO, "scan.mp4", "video/mp4", 100L * 1024 * 1024);
+
+        SignedUploadUrlResponse res = fileService.createSignedUploadUrl(OWNER, req);
+
+        assertThat(res.uploadSessionId()).isEqualTo(53L);
+        verify(uploadSessionRepository).save(any(UploadSession.class));
+    }
+
+    @Test
+    void createRejectsHealthAttachmentsOver100Mb() {
+        petOwnedBy(OWNER);
+        SignedUploadUrlRequest req = new SignedUploadUrlRequest(
+                10L, FileCategory.HEALTH_REPORT, "blood.pdf", "application/pdf", 100L * 1024 * 1024 + 1);
+
+        assertThatThrownBy(() -> fileService.createSignedUploadUrl(OWNER, req))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(uploadSessionRepository, never()).save(any());
+    }
+
+    @Test
+    void createRejectsUnsupportedCategory() {
+        // STOOL_IMAGE is in the FileCategory enum but not yet wired into RULES.
+        petOwnedBy(OWNER);
+        SignedUploadUrlRequest req = new SignedUploadUrlRequest(
+                10L, FileCategory.STOOL_IMAGE, "x.jpg", "image/jpeg", 1024L);
         assertThatThrownBy(() -> fileService.createSignedUploadUrl(OWNER, req))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(uploadSessionRepository, never()).save(any());

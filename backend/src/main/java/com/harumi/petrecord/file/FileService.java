@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -25,14 +24,36 @@ public class FileService {
 
     private static final Logger log = LoggerFactory.getLogger(FileService.class);
 
-    private static final long MAX_AVATAR_BYTES = 5L * 1024 * 1024;
-    private static final Map<String, String> IMAGE_EXTENSIONS = Map.of(
+    private static final String PROVIDER_R2 = "R2";
+    private static final long HEALTH_ATTACHMENT_MAX_BYTES = 100L * 1024 * 1024;
+
+    // Per-category upload rules: object-key prefix, allowed content types mapped to file extension,
+    // and the per-file size cap (plan §10).
+    private record CategoryRule(String prefix, Map<String, String> extByType, long maxBytes) {
+    }
+
+    private static final Map<String, String> IMAGE_EXT = Map.of(
             "image/jpeg", "jpg",
             "image/png", "png",
             "image/webp", "webp"
     );
-    private static final Set<String> ALLOWED_AVATAR_TYPES = IMAGE_EXTENSIONS.keySet();
-    private static final String PROVIDER_R2 = "R2";
+
+    private static final Map<FileCategory, CategoryRule> RULES = Map.of(
+            FileCategory.AVATAR,
+            new CategoryRule("avatars", IMAGE_EXT, 5L * 1024 * 1024),
+            FileCategory.HEALTH_REPORT,
+            new CategoryRule("health-reports", Map.of("application/pdf", "pdf"), HEALTH_ATTACHMENT_MAX_BYTES),
+            FileCategory.HEALTH_IMAGE,
+            new CategoryRule("health-images", IMAGE_EXT, HEALTH_ATTACHMENT_MAX_BYTES),
+            FileCategory.ULTRASOUND_VIDEO,
+            new CategoryRule("ultrasound-videos",
+                    Map.of(
+                            "video/mp4", "mp4",
+                            "video/quicktime", "mov",
+                            "video/x-matroska", "mkv",
+                            "video/matroska", "mkv"),
+                    HEALTH_ATTACHMENT_MAX_BYTES)
+    );
 
     private final UploadSessionRepository uploadSessionRepository;
     private final FileRepository fileRepository;
@@ -54,20 +75,29 @@ public class FileService {
 
     @Transactional
     public SignedUploadUrlResponse createSignedUploadUrl(CurrentUser currentUser, SignedUploadUrlRequest request) {
-        if (request.category() != FileCategory.AVATAR) {
-            throw new IllegalArgumentException("Only AVATAR uploads are supported");
+        CategoryRule rule = RULES.get(request.category());
+        if (rule == null) {
+            throw new IllegalArgumentException("Unsupported file category: " + request.category());
         }
         Pet pet = loadOwnedPet(currentUser, request.petId());
-        validateAvatar(request.contentType(), request.fileSize());
 
-        String ext = IMAGE_EXTENSIONS.get(request.contentType());
+        String ext = rule.extByType().get(request.contentType());
+        if (ext == null) {
+            throw new IllegalArgumentException("Unsupported content type for "
+                    + request.category() + ": " + request.contentType());
+        }
+        if (request.fileSize() <= 0 || request.fileSize() > rule.maxBytes()) {
+            throw new IllegalArgumentException("File size exceeds limit for " + request.category());
+        }
+
         String storedFilename = UUID.randomUUID() + "." + ext;
-        String objectKey = "avatars/users/%d/pets/%d/%s".formatted(currentUser.id(), pet.getId(), storedFilename);
+        String objectKey = "%s/users/%d/pets/%d/%s".formatted(
+                rule.prefix(), currentUser.id(), pet.getId(), storedFilename);
 
         UploadSession session = UploadSession.builder()
                 .userId(currentUser.id())
                 .petId(pet.getId())
-                .fileCategory(FileCategory.AVATAR)
+                .fileCategory(request.category())
                 .originalFilename(request.originalFilename())
                 .storedFilename(storedFilename)
                 .bucketName(properties.getBucketName())
@@ -81,7 +111,8 @@ public class FileService {
 
         String uploadUrl = storage.presignUploadUrl(objectKey, request.contentType(),
                 Duration.ofMinutes(properties.getUploadExpireMinutes()));
-        log.info("Created upload session id={} petId={}", saved.getId(), pet.getId());
+        log.info("Created upload session id={} petId={} category={}",
+                saved.getId(), pet.getId(), request.category());
         return new SignedUploadUrlResponse(saved.getId(), uploadUrl, objectKey,
                 properties.getUploadExpireMinutes() * 60L);
     }
@@ -142,14 +173,5 @@ public class FileService {
     private Pet loadOwnedPet(CurrentUser currentUser, Long petId) {
         return petRepository.findByIdAndOwnerId(petId, currentUser.id())
                 .orElseThrow(() -> new ResourceNotFoundException("Pet not found"));
-    }
-
-    private void validateAvatar(String contentType, long fileSize) {
-        if (!ALLOWED_AVATAR_TYPES.contains(contentType)) {
-            throw new IllegalArgumentException("Unsupported image type: " + contentType);
-        }
-        if (fileSize <= 0 || fileSize > MAX_AVATAR_BYTES) {
-            throw new IllegalArgumentException("Avatar must be between 1 byte and 5 MB");
-        }
     }
 }
