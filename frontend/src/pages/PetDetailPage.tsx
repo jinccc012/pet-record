@@ -16,6 +16,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { DailyRecordsTab } from '../components/daily/DailyRecordsTab';
 import { ErrorState } from '../components/common/ErrorState';
+import { HealthRecordsTab } from '../components/health/HealthRecordsTab';
 import { Loading } from '../components/common/Loading';
 import { PetBasicInfoForm } from '../components/pet/PetBasicInfoForm';
 import { useDeletePet, usePet } from '../hooks/usePets';
@@ -94,10 +95,12 @@ export function PetDetailPage() {
           <Tabs value={tab} onChange={(_e, v) => setTab(v)} sx={{ mt: 1, mb: 2 }}>
             <Tab label="基本資料" />
             <Tab label="日常紀錄" />
+            <Tab label="健康紀錄" />
           </Tabs>
 
           <Box hidden={tab !== 0}>{tab === 0 && <PetBasicInfoForm pet={pet} />}</Box>
           <Box hidden={tab !== 1}>{tab === 1 && <DailyRecordsTab petId={id} />}</Box>
+          <Box hidden={tab !== 2}>{tab === 2 && <HealthRecordsTab petId={id} />}</Box>
         </CardContent>
       </Card>
 

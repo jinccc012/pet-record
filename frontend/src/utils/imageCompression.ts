@@ -1,11 +1,20 @@
 import imageCompression from 'browser-image-compression';
 
-// Compress an avatar image to webp, max ~1MB / 1024px (plan §9.3).
-export async function compressAvatar(file: File): Promise<File> {
+export interface ImageCompressOptions {
+  maxSizeMB: number;
+  maxWidthOrHeight: number;
+}
+
+export function compressImage(file: File, opts: ImageCompressOptions): Promise<File> {
   return imageCompression(file, {
-    maxSizeMB: 1,
-    maxWidthOrHeight: 1024,
+    maxSizeMB: opts.maxSizeMB,
+    maxWidthOrHeight: opts.maxWidthOrHeight,
     useWebWorker: true,
     fileType: 'image/webp',
   });
+}
+
+// Convenience for avatar uploads (plan §9.3).
+export function compressAvatar(file: File): Promise<File> {
+  return compressImage(file, { maxSizeMB: 1, maxWidthOrHeight: 1024 });
 }
