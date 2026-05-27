@@ -9,7 +9,7 @@
 - Neon PostgreSQL 資料庫
 - Cloudflare R2 檔案儲存
 - Signed URL 檔案直傳
-- Oracle Cloud Always Free VM 部署後端
+- Google Cloud 部署後端
 - Cloudflare Pages 部署前端
 
 ---
