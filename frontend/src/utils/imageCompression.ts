@@ -14,7 +14,6 @@ export function compressImage(file: File, opts: ImageCompressOptions): Promise<F
   });
 }
 
-// Convenience for avatar uploads (plan §9.3).
 export function compressAvatar(file: File): Promise<File> {
   return compressImage(file, { maxSizeMB: 1, maxWidthOrHeight: 1024 });
 }

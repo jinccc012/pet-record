@@ -96,8 +96,6 @@ public class HealthRecordService {
         log.info("Soft-deleted health record id={} petId={}", recordId, petId);
     }
 
-    // -- helpers ---------------------------------------------------------
-
     private void assertPetOwned(CurrentUser currentUser, Long petId) {
         petRepository.findByIdAndOwnerId(petId, currentUser.id())
                 .orElseThrow(() -> new ResourceNotFoundException("Pet not found"));

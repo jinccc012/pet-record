@@ -7,7 +7,6 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.util.List;
 
-// Shared shape used for both create (POST) and full-replace (PUT).
 public record HealthRecordRequest(
         @NotNull @PastOrPresent LocalDate visitDate,
         @Size(max = 255) String hospitalName,

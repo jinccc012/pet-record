@@ -10,7 +10,6 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 
-// PUT (full replace) of a day's record. record_date is fixed and not changed here.
 public record UpdateDailyRecordRequest(
         @DecimalMin("0.0") @DecimalMax("999.99") @Digits(integer = 3, fraction = 2) BigDecimal weightKg,
         @PositiveOrZero Integer waterMl,

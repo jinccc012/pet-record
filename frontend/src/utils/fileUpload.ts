@@ -7,8 +7,6 @@ export type UploadableCategory = Extract<
   'AVATAR' | 'HEALTH_REPORT' | 'HEALTH_IMAGE' | 'ULTRASOUND_VIDEO'
 >;
 
-// Decide whether/how to compress before upload.
-// Plan §9.2/§9.3: only compress images; PDFs/videos are uploaded as-is.
 async function prepare(file: File, category: UploadableCategory): Promise<File> {
   if (!file.type.startsWith('image/')) return file;
   if (category === 'AVATAR') return compressImage(file, { maxSizeMB: 1, maxWidthOrHeight: 1024 });
@@ -25,11 +23,6 @@ function uploadContentType(file: File): string {
   return file.type;
 }
 
-/**
- * Direct-upload flow shared by every category:
- *   compress (if image) -> ask backend for signed PUT URL -> PUT to R2 -> complete-upload.
- * Returns the completed file metadata so the caller can store fileId.
- */
 export async function uploadFile(
   petId: number,
   file: File,
@@ -55,7 +48,6 @@ export async function uploadFile(
   return fileApi.completeUpload(signed.uploadSessionId);
 }
 
-// MIME -> category derivation for "pick a file" UIs.
 export function categoryFromFile(file: File): UploadableCategory | null {
   const mime = file.type;
   if (mime === 'application/pdf') return 'HEALTH_REPORT';

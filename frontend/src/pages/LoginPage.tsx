@@ -11,7 +11,6 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link as RouterLink, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -47,10 +46,6 @@ export function LoginPage() {
       navigate(from, { replace: true });
     },
   });
-
-  useEffect(() => {
-    // no-op; rendering Navigate below handles redirect when already logged in
-  }, []);
 
   if (isAuthenticated) {
     return <Navigate to={from} replace />;

@@ -27,8 +27,6 @@ public class FileService {
     private static final String PROVIDER_R2 = "R2";
     private static final long HEALTH_ATTACHMENT_MAX_BYTES = 100L * 1024 * 1024;
 
-    // Per-category upload rules: object-key prefix, allowed content types mapped to file extension,
-    // and the per-file size cap (plan §10).
     private record CategoryRule(String prefix, Map<String, String> extByType, long maxBytes) {
     }
 
