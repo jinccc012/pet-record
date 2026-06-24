@@ -17,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 public class AuthService {
 
@@ -26,12 +28,19 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
+    /**
+     * A throwaway hash matched against when the email is unknown, so that a failed login takes the
+     * same time whether or not the account exists. Prevents timing-based account enumeration.
+     */
+    private final String dummyHash;
+
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.dummyHash = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
     @Transactional
@@ -56,8 +65,13 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+        User user = userRepository.findByEmail(request.email()).orElse(null);
+        if (user == null) {
+            // Run a matching pass against a dummy hash so the response time does not reveal
+            // whether the email is registered, then fail with the same generic error.
+            passwordEncoder.matches(request.password(), dummyHash);
+            throw new BadCredentialsException("Invalid credentials");
+        }
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             throw new BadCredentialsException("Invalid credentials");
         }
@@ -65,9 +79,19 @@ public class AuthService {
         return buildAuthResponse(user);
     }
 
+    /**
+     * Revokes every token currently held by the user by bumping their token version. Used for
+     * server-side logout; the same mechanism applies to password changes or account disabling.
+     */
+    @Transactional
+    public void logout(Long userId) {
+        userRepository.incrementTokenVersion(userId);
+        log.info("Revoked tokens for user id={}", userId);
+    }
+
     private AuthResponse buildAuthResponse(User user) {
         CurrentUser principal = new CurrentUser(user.getId(), user.getUsername(), user.getRole());
-        String token = jwtService.issueToken(principal);
+        String token = jwtService.issueToken(principal, user.getTokenVersion());
         return AuthResponse.bearer(token, jwtService.getExpirationSeconds(), UserSummary.from(user));
     }
 }

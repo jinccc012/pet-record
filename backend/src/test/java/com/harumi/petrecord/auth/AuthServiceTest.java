@@ -24,8 +24,10 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,7 +41,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void stubJwt() {
-        lenient().when(jwtService.issueToken(any(CurrentUser.class))).thenReturn("jwt-token");
+        lenient().when(jwtService.issueToken(any(CurrentUser.class), anyInt())).thenReturn("jwt-token");
         lenient().when(jwtService.getExpirationSeconds()).thenReturn(3600L);
     }
 
@@ -113,6 +115,13 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> authService.login(new LoginRequest("nobody@example.com", "pw")))
                 .isInstanceOf(BadCredentialsException.class);
+    }
+
+    @Test
+    void logoutBumpsTokenVersion() {
+        authService.logout(5L);
+
+        verify(userRepository).incrementTokenVersion(5L);
     }
 
     @Test

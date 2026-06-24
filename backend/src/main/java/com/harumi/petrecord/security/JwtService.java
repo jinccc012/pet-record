@@ -24,20 +24,21 @@ public class JwtService {
         this.signingKey = Keys.hmacShaKeyFor(properties.getSecret().getBytes());
     }
 
-    public String issueToken(CurrentUser user) {
+    public String issueToken(CurrentUser user, int tokenVersion) {
         Instant now = Instant.now();
         Instant expiresAt = now.plus(Duration.ofMinutes(properties.getExpirationMinutes()));
         return Jwts.builder()
                 .subject(String.valueOf(user.id()))
                 .claim("username", user.username())
                 .claim("role", user.role().name())
+                .claim("ver", tokenVersion)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiresAt))
                 .signWith(signingKey, Jwts.SIG.HS256)
                 .compact();
     }
 
-    public CurrentUser parseToken(String token) {
+    public VerifiedToken parseToken(String token) {
         try {
             Claims claims = Jwts.parser()
                     .verifyWith(signingKey)
@@ -47,10 +48,15 @@ public class JwtService {
             Long id = Long.parseLong(claims.getSubject());
             String username = claims.get("username", String.class);
             UserRole role = UserRole.valueOf(claims.get("role", String.class));
-            return new CurrentUser(id, username, role);
+            Integer version = claims.get("ver", Integer.class);
+            return new VerifiedToken(new CurrentUser(id, username, role), version == null ? 0 : version);
         } catch (JwtException | IllegalArgumentException e) {
             throw new InvalidJwtException("Invalid JWT");
         }
+    }
+
+    /** A validly-signed token's principal together with the token version it was issued at. */
+    public record VerifiedToken(CurrentUser user, int tokenVersion) {
     }
 
     public long getExpirationSeconds() {

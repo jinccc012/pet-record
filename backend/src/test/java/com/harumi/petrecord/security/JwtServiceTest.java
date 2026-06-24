@@ -25,16 +25,17 @@ class JwtServiceTest {
     void issueAndParseRoundTrip() {
         CurrentUser user = new CurrentUser(42L, "harumi", UserRole.USER);
 
-        String token = jwtService.issueToken(user);
-        CurrentUser parsed = jwtService.parseToken(token);
+        String token = jwtService.issueToken(user, 7);
+        JwtService.VerifiedToken parsed = jwtService.parseToken(token);
 
-        assertThat(parsed).isEqualTo(user);
+        assertThat(parsed.user()).isEqualTo(user);
+        assertThat(parsed.tokenVersion()).isEqualTo(7);
     }
 
     @Test
     void parseRejectsTamperedToken() {
         CurrentUser user = new CurrentUser(1L, "harumi", UserRole.USER);
-        String token = jwtService.issueToken(user);
+        String token = jwtService.issueToken(user, 0);
         String tampered = token.substring(0, token.length() - 2) + "AA";
 
         assertThatThrownBy(() -> jwtService.parseToken(tampered))
@@ -44,7 +45,7 @@ class JwtServiceTest {
     @Test
     void parseRejectsTokenSignedWithDifferentKey() {
         CurrentUser user = new CurrentUser(1L, "harumi", UserRole.USER);
-        String token = jwtService.issueToken(user);
+        String token = jwtService.issueToken(user, 0);
 
         JwtProperties otherProps = new JwtProperties();
         otherProps.setSecret("different-secret-different-secret-different-secret");

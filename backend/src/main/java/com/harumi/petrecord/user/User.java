@@ -48,6 +48,13 @@ public class User {
     @Column(name = "role", nullable = false, length = 30)
     private UserRole role;
 
+    /**
+     * Incremented to revoke all currently-issued tokens for this user. The value is stamped into
+     * each JWT as the "ver" claim and re-checked on every authenticated request.
+     */
+    @Column(name = "token_version", nullable = false)
+    private int tokenVersion;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

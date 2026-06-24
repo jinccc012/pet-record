@@ -1,5 +1,7 @@
 package com.harumi.petrecord.security;
 
+import com.harumi.petrecord.security.JwtService.VerifiedToken;
+import com.harumi.petrecord.user.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -25,9 +28,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserRepository userRepository) {
         this.jwtService = jwtService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -42,7 +47,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = header.substring(BEARER_PREFIX.length());
         try {
-            CurrentUser currentUser = jwtService.parseToken(token);
+            VerifiedToken verified = jwtService.parseToken(token);
+            CurrentUser currentUser = verified.user();
+
+            // Re-check against the database on every request so deleted/disabled users and revoked
+            // tokens (token_version bumped on logout, etc.) lose access immediately rather than at
+            // token expiry. Empty result => user is gone or soft-deleted.
+            Optional<Integer> currentVersion = userRepository.findTokenVersionById(currentUser.id());
+            if (currentVersion.isEmpty() || currentVersion.get() != verified.tokenVersion()) {
+                log.debug("Stale or revoked JWT on {} {}", request.getMethod(), request.getRequestURI());
+                SecurityContextHolder.clearContext();
+                chain.doFilter(request, response);
+                return;
+            }
+
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                     currentUser,
                     null,

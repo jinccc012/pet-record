@@ -90,6 +90,16 @@ class AuthFlowIntegrationTest {
 
         String meBody = meResult.getResponse().getContentAsString();
         assertThat(meBody).doesNotContain("password");
+
+        // Logout revokes the token server-side
+        mvc.perform(post("/api/auth/logout")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        // The previously-valid token no longer works after revocation
+        mvc.perform(get("/api/users/me")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
